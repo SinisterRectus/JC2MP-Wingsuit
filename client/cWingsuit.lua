@@ -7,6 +7,8 @@ function Wingsuit:__init()
 	self.speed = self.default_speed
 	
 	Events:Subscribe("KeyUp", self, self.Activate)
+	Events:Subscribe("ModulesLoad", self, self.AddHelp)
+	Events:Subscribe("ModuleUnload", self, self.RemoveHelp)
 
 end
 
@@ -91,6 +93,28 @@ function Wingsuit:Camera()
 
 	Camera:SetPosition(LocalPlayer:GetPosition() + LocalPlayer:GetAngle() * Vector3(0, 2, 7))
 	Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), LocalPlayer:GetAngle(), 0.9))
+
+end
+
+function Wingsuit:AddHelp()
+
+    Events:Fire("HelpAddItem",
+        {
+            name = "Wingsuit",
+            text = 
+                "The wingsuit allows you to fly around Panau unencumbered." .. 
+				"\n\nTo activate, double-tap Shift. To de-activate, double-tap Ctrl." ..
+                "\nWhile flying, hold Shift to speed up or Ctrl to slow down."
+        })
+
+end
+
+function Wingsuit:RemoveHelp()
+
+    Events:Fire("HelpRemoveItem",
+        {
+            name = "Wingsuit"
+        })
 
 end
 
