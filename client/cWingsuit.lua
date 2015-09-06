@@ -6,6 +6,13 @@ function Wingsuit:__init()
 	self.max_speed = 300 -- 300 m/s default
 	self.speed = self.default_speed
 	
+	self.blacklist = { -- Disallow activating during these base states
+		[AnimationState.SDead] = true,
+		[AnimationState.SUnfoldParachuteHorizontal] = true,
+		[AnimationState.SUnfoldParachuteVertical] = true,
+		[AnimationState.SPullOpenParachuteVertical] = true
+	}
+	
 	Events:Subscribe("KeyUp", self, self.Activate)
 	Events:Subscribe("ModulesLoad", self, self.AddHelp)
 	Events:Subscribe("ModuleUnload", self, self.RemoveHelp)
@@ -14,26 +21,43 @@ end
 
 function Wingsuit:Activate(args)
 
-	if args.key == VirtualKey.Shift and not self.velocity_sub and LocalPlayer:GetState() == PlayerState.OnFoot then
+	if args.key == VirtualKey.Shift and not self.velocity_sub and LocalPlayer:GetState() == PlayerState.OnFoot then 
+	
+		if self.blacklist[LocalPlayer:GetBaseState()] then return end
+
 		if not self.timer or self.timer:GetMilliseconds() > 500 then
+
 			self.timer = Timer()
+
 		elseif self.timer:GetMilliseconds() < 500 and not self.delay then
+
 			self.timer = nil
 			self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
 			local timer = Timer()
-			self.delay = Events:Subscribe("PreTick", self, function(self)
-				LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 5, -5))
-				if timer:GetMilliseconds() > 1000 then
-					self.speed = self.default_speed
-					Events:Unsubscribe(self.delay)
-					self.delay = nil
-					LocalPlayer:SetBaseState(AnimationState.SSkydive)
-					self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
-					self.input_sub = Events:Subscribe("LocalPlayerInput", self, self.InputBlock)
-				end
-			end)
+			local bs = LocalPlayer:GetBaseState()
+			if bs == AnimationState.SSkydive or bs == AnimationState.SParachute then
+				LocalPlayer:SetBaseState(AnimationState.SSkydive)
+				self.speed = self.default_speed
+				self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
+				self.input_sub = Events:Subscribe("LocalPlayerInput", self, self.InputBlock)
+			else
+				self.delay = Events:Subscribe("PreTick", self, function(self)
+					LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 5, -5))
+					if timer:GetMilliseconds() > 1000 then
+						self.speed = self.default_speed
+						Events:Unsubscribe(self.delay)
+						self.delay = nil
+						LocalPlayer:SetBaseState(AnimationState.SSkydive)
+						self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
+						self.input_sub = Events:Subscribe("LocalPlayerInput", self, self.InputBlock)
+					end
+				end)
+			end
+			
 		end
+
 	elseif args.key == VirtualKey.Control and self.velocity_sub then
+	
 		if not self.timer or self.timer:GetMilliseconds() > 500 then
 			self.timer = Timer()
 		elseif self.timer:GetMilliseconds() < 500 then
@@ -46,6 +70,7 @@ function Wingsuit:Activate(args)
 			self.camera_sub = nil
 			self.input_sub = nil
 		end
+
 	end
 
 end
