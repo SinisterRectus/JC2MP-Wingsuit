@@ -8,7 +8,7 @@ function Wingsuit:__init()
 	self.sink_speed = 7 -- 7 ms default (for realism mode)
 	self.speed = self.default_speed
 	
-	self.realism = true
+	self.realism = false
 	
 	self.actions = { -- Actions to block while flying
 		Action.LookUp,
@@ -159,7 +159,8 @@ function Wingsuit:AddHelp()
 				name = "Wingsuit",
 				text = 
 					"The wingsuit allows you to fly around Panau unencumbered." .. 
-					"\n\nTo activate, double-tap Shift. To de-activate, double-tap Ctrl."
+					"\n\nTo activate, double-tap Shift while sky-diving." ..
+					"\nTo de-activate, double-tap Ctrl."
 			})	
 
 	else
