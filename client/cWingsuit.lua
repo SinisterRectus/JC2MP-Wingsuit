@@ -10,7 +10,7 @@ function Wingsuit:__init()
 	
 	self.realism = true
 	
-	self.inputs = { -- Inputs to block while flying
+	self.actions = { -- Actions to block while flying
 		Action.LookUp,
 		Action.LookDown,
 		Action.LookLeft,
@@ -80,12 +80,7 @@ function Wingsuit:Activate(args)
 		elseif self.timer:GetMilliseconds() < 500 then
 			LocalPlayer:SetLinearVelocity(LocalPlayer:GetLinearVelocity() * 0)
 			LocalPlayer:SetBaseState(AnimationState.SFall)
-			Events:Unsubscribe(self.velocity_sub)
-			Events:Unsubscribe(self.camera_sub)
-			Events:Unsubscribe(self.input_sub)
-			self.velocity_sub = nil
-			self.camera_sub = nil
-			self.input_sub = nil
+			self:Abort()
 		end
 
 	end
@@ -93,16 +88,11 @@ function Wingsuit:Activate(args)
 end
 
 
+
 function Wingsuit:Velocity()
 
 	if LocalPlayer:GetBaseState() ~= AnimationState.SSkydive then
-		Events:Unsubscribe(self.velocity_sub)
-		Events:Unsubscribe(self.camera_sub)
-		Events:Unsubscribe(self.input_sub)
-		self.velocity_sub = nil
-		self.camera_sub = nil
-		self.input_sub = nil
-		return
+		self:Abort()
 	end
 	
 	if self.realism then
@@ -132,7 +122,7 @@ end
 
 function Wingsuit:InputBlock(args)
 
-	for _, action in ipairs(self.inputs) do
+	for _, action in ipairs(self.actions) do
 		Input:SetValue(action, 0)
 	end
 	
@@ -146,6 +136,17 @@ function Wingsuit:Camera()
 
 	Camera:SetPosition(LocalPlayer:GetPosition() + LocalPlayer:GetAngle() * Vector3(0, 2, 7))
 	Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), LocalPlayer:GetAngle(), 0.9))
+
+end
+
+function Wingsuit:Abort()
+
+	Events:Unsubscribe(self.velocity_sub)
+	Events:Unsubscribe(self.camera_sub)
+	Events:Unsubscribe(self.input_sub)
+	self.velocity_sub = nil
+	self.camera_sub = nil
+	self.input_sub = nil
 
 end
 
