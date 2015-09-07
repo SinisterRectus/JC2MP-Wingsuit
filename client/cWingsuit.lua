@@ -4,7 +4,17 @@ function Wingsuit:__init()
 	
 	self.default_speed = 51 -- 51 m/s default
 	self.max_speed = 300 -- 300 m/s default
+	self.sink_speed = 7 -- 7 ms default (for realism mode)
 	self.speed = self.default_speed
+	
+	self.realism = false
+	
+	self.inputs = { -- Inputs to block while flying
+		Action.LookUp,
+		Action.LookDown,
+		Action.LookLeft,
+		Action.LookRight
+	}
 	
 	self.blacklist = { -- Disallow activating during these base states
 		[AnimationState.SDead] = true,
@@ -31,16 +41,17 @@ function Wingsuit:Activate(args)
 
 		elseif self.timer:GetMilliseconds() < 500 and not self.delay then
 
-			self.timer = nil
-			self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
-			local timer = Timer()
+			self.timer = nil		
 			local bs = LocalPlayer:GetBaseState()
-			if bs == AnimationState.SSkydive or bs == AnimationState.SParachute then
+			if (not self.realism and (bs == AnimationState.SSkydive or bs == AnimationState.SParachute)) or (self.realism and bs == AnimationState.SSkydive) then
+				self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
 				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 				self.speed = self.default_speed
 				self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
-				self.input_sub = Events:Subscribe("LocalPlayerInput", self, self.InputBlock)
-			else
+				self.input_sub = Events:Subscribe("InputPoll", self, self.InputBlock)
+			elseif not self.realism then
+				local timer = Timer()
+				self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
 				self.delay = Events:Subscribe("PreTick", self, function(self)
 					LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 5, -5))
 					if timer:GetMilliseconds() > 1000 then
@@ -49,7 +60,7 @@ function Wingsuit:Activate(args)
 						self.delay = nil
 						LocalPlayer:SetBaseState(AnimationState.SSkydive)
 						self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
-						self.input_sub = Events:Subscribe("LocalPlayerInput", self, self.InputBlock)
+						self.input_sub = Events:Subscribe("InputPoll", self, self.InputBlock)
 					end
 				end)
 			end
@@ -88,16 +99,23 @@ function Wingsuit:Velocity()
 		return
 	end
 	
-	if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_speed then
-		self.speed = self.speed + 1
-	elseif Key:IsDown(VirtualKey.Control) and self.speed > 0 then
-		self.speed = self.speed - 1
-	end
+	if self.realism then
 	
-	-- local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 0.2 * self.speed
-	local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 20
+		local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 20
+		LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed) + Vector3(0, -self.sink_speed, 0))		
+	
+	else
+	
+		if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_speed then
+			self.speed = self.speed + 1
+		elseif Key:IsDown(VirtualKey.Control) and self.speed > 0 then
+			self.speed = self.speed - 1
+		end
+			
+		local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 20
+		LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed))
 		
-	LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed))
+	end
 	
 	local speed_string = string.format("%i km/h   %i m", LocalPlayer:GetLinearVelocity():Length() * 3.6, LocalPlayer:GetPosition().y - 200)
 	local position = Vector2(0.5 * Render.Width - 0.5 * Render:GetTextWidth(speed_string, TextSize.Large), Render.Height - Render:GetTextHeight(speed_string, TextSize.Large))
@@ -108,8 +126,12 @@ end
 
 function Wingsuit:InputBlock(args)
 
-	if args.input == Action.LookLeft or args.input == Action.LookRight or args.input == Action.LookUp or args.input == args.input == Action.LookDown then
-		return false
+	for _, input in ipairs(self.inputs) do
+		Input:SetValue(input, 0)
+	end
+	
+	if self.realism and Input:GetValue(Action.MoveBackward) > 0 and LocalPlayer:GetAngle().pitch > 0 then
+		Input:SetValue(Action.MoveBackward, 0)
 	end
 
 end
