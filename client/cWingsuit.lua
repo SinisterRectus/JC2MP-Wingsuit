@@ -4,10 +4,11 @@ function Wingsuit:__init()
 	
 	self.default_speed = 51 -- 51 m/s default
 	self.max_speed = 300 -- 300 m/s default
+	self.min_speed = 1 -- 1 m/s default
 	self.sink_speed = 7 -- 7 ms default (for realism mode)
 	self.speed = self.default_speed
 	
-	self.realism = false
+	self.realism = true
 	
 	self.inputs = { -- Inputs to block while flying
 		Action.LookUp,
@@ -31,9 +32,10 @@ end
 
 function Wingsuit:Activate(args)
 
-	if args.key == VirtualKey.Shift and not self.velocity_sub and LocalPlayer:GetState() == PlayerState.OnFoot then 
+	if args.key == VirtualKey.Shift and not self.velocity_sub and LocalPlayer:GetState() == PlayerState.OnFoot then
 	
-		if self.blacklist[LocalPlayer:GetBaseState()] then return end
+		local bs = LocalPlayer:GetBaseState()
+		if self.blacklist[bs] then return end
 
 		if not self.timer or self.timer:GetMilliseconds() > 500 then
 
@@ -42,27 +44,31 @@ function Wingsuit:Activate(args)
 		elseif self.timer:GetMilliseconds() < 500 and not self.delay then
 
 			self.timer = nil		
-			local bs = LocalPlayer:GetBaseState()
+			
 			if (not self.realism and (bs == AnimationState.SSkydive or bs == AnimationState.SParachute)) or (self.realism and bs == AnimationState.SSkydive) then
-				self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
-				LocalPlayer:SetBaseState(AnimationState.SSkydive)
+				
 				self.speed = self.default_speed
+				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 				self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
+				self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
 				self.input_sub = Events:Subscribe("InputPoll", self, self.InputBlock)
+				
 			elseif not self.realism then
+		
 				local timer = Timer()
 				self.camera_sub = Events:Subscribe("CalcView", self, self.Camera)
 				self.delay = Events:Subscribe("PreTick", self, function(self)
 					LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 5, -5))
 					if timer:GetMilliseconds() > 1000 then
-						self.speed = self.default_speed
 						Events:Unsubscribe(self.delay)
 						self.delay = nil
+						self.speed = self.default_speed
 						LocalPlayer:SetBaseState(AnimationState.SSkydive)
 						self.velocity_sub = Events:Subscribe("Render", self, self.Velocity)
 						self.input_sub = Events:Subscribe("InputPoll", self, self.InputBlock)
 					end
 				end)
+
 			end
 			
 		end
@@ -108,7 +114,7 @@ function Wingsuit:Velocity()
 	
 		if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_speed then
 			self.speed = self.speed + 1
-		elseif Key:IsDown(VirtualKey.Control) and self.speed > 0 then
+		elseif Key:IsDown(VirtualKey.Control) and self.speed > self.min_speed then
 			self.speed = self.speed - 1
 		end
 			
@@ -126,8 +132,8 @@ end
 
 function Wingsuit:InputBlock(args)
 
-	for _, input in ipairs(self.inputs) do
-		Input:SetValue(input, 0)
+	for _, action in ipairs(self.inputs) do
+		Input:SetValue(action, 0)
 	end
 	
 	if self.realism and Input:GetValue(Action.MoveBackward) > 0 and LocalPlayer:GetAngle().pitch > 0 then
@@ -145,14 +151,28 @@ end
 
 function Wingsuit:AddHelp()
 
-    Events:Fire("HelpAddItem",
-        {
-            name = "Wingsuit",
-            text = 
-                "The wingsuit allows you to fly around Panau unencumbered." .. 
-				"\n\nTo activate, double-tap Shift. To de-activate, double-tap Ctrl." ..
-                "\nWhile flying, hold Shift to speed up or Ctrl to slow down."
-        })
+	if self.realism then
+	
+		Events:Fire("HelpAddItem",
+			{
+				name = "Wingsuit",
+				text = 
+					"The wingsuit allows you to fly around Panau unencumbered." .. 
+					"\n\nTo activate, double-tap Shift. To de-activate, double-tap Ctrl."
+			})	
+
+	else
+
+		Events:Fire("HelpAddItem",
+			{
+				name = "Wingsuit",
+				text = 
+					"The wingsuit allows you to fly around Panau unencumbered." .. 
+					"\n\nTo activate, double-tap Shift. To de-activate, double-tap Ctrl." ..
+					"\nWhile flying, hold Shift to speed up or Ctrl to slow down."
+			})
+			
+	end
 
 end
 
