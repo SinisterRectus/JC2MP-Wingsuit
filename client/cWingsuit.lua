@@ -78,7 +78,7 @@ function Wingsuit:Activate(args)
 		if not self.timer or self.timer:GetMilliseconds() > 500 then
 			self.timer = Timer()
 		elseif self.timer:GetMilliseconds() < 500 then
-			LocalPlayer:SetLinearVelocity(LocalPlayer:GetLinearVelocity() * 0)
+			LocalPlayer:SetLinearVelocity(Vector3.Zero)
 			LocalPlayer:SetBaseState(AnimationState.SFall)
 			self:Abort()
 		end
