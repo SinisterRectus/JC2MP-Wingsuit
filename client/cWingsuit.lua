@@ -14,6 +14,7 @@ function Wingsuit:__init()
 	
 	self.tether_length = 150 -- meters
 	self.yaw_gain = 1.5
+	self.yaw = 0
 	
 	self.speed = self.default_speed
 	self.vertical_speed = self.default_vertical_speed
@@ -55,7 +56,7 @@ function Wingsuit:Activate(args)
 
 			self.timers.activate = Timer()
 
-		elseif self.timers.activate:GetMilliseconds() < 500 and not self.subs.delay then
+		elseif self.timers.activate:GetMilliseconds() < 500 then
 
 			self.timers.activate = nil
 			
@@ -187,7 +188,7 @@ function Wingsuit:SetVelocity()
 	
 	if not self.barrel then return end
 	
-	if Input:GetValue(Action.MoveLeft) > 0 then
+	if Input:GetValue(Action.MoveLeft) > 0 and not self.subs.grapple then
 		if not self.roll_left then
 			self.roll_left = true
 			if not self.timers.roll_left then
@@ -196,7 +197,7 @@ function Wingsuit:SetVelocity()
 				if not self.subs.roll_left then
 					local timer = Timer()
 					LocalPlayer:SetBaseState(AnimationState.SSkydiveDash)
-					self.subs.roll_left = Events:Subscribe("PreTick", function(args)
+					self.subs.roll_left = Events:Subscribe("PreTick", function()
 						if timer:GetMilliseconds() > 750 then
 							LocalPlayer:SetBaseState(AnimationState.SSkydive)
 							Events:Unsubscribe(self.subs.roll_left)
@@ -213,7 +214,7 @@ function Wingsuit:SetVelocity()
 		self.roll_left = nil
 	end
 	
-	if Input:GetValue(Action.MoveRight) > 0 then
+	if Input:GetValue(Action.MoveRight) > 0 and not self.subs.grapple then
 		if not self.roll_right then
 			self.roll_right = true
 			if not self.timers.roll_right then
@@ -222,7 +223,7 @@ function Wingsuit:SetVelocity()
 				if not self.subs.roll_right then
 					local timer = Timer()
 					LocalPlayer:SetBaseState(AnimationState.SSkydiveDash)
-					self.subs.roll_right = Events:Subscribe("PreTick", function(args)
+					self.subs.roll_right = Events:Subscribe("PreTick", function()
 						if timer:GetMilliseconds() > 750 then
 							LocalPlayer:SetBaseState(AnimationState.SSkydive)
 							Events:Unsubscribe(self.subs.roll_right)
@@ -241,7 +242,7 @@ function Wingsuit:SetVelocity()
 
 end
 
-function Wingsuit:Glide(args)
+function Wingsuit:Glide()
 	
 	if self.superman then return end
 
@@ -288,21 +289,22 @@ function Wingsuit:Input(args)
 			angle = Angle()
 		})
 
-		self.subs.grapple = Events:Subscribe("GameRender", function(args)
+		self.subs.grapple = Events:Subscribe("GameRender", function()
 			
 			local dt = self.timers.grapple:GetMilliseconds()			
 			local bone_pos = LocalPlayer:GetBonePosition("ragdoll_LeftForeArm")
 			local distance = self.tether_length * dt / 500
-			local ray = Physics:Raycast(bone_pos, direction, 0, distance)
 			
-			local color = Color.Silver
+			local color = Color(100, 100, 100)
 			local r = math.lerp(0.5 * color.r, color.r, self.dt)
 			local g = math.lerp(0.5 * color.g, color.g, self.dt)
 			local b = math.lerp(0.5 * color.b, color.b, self.dt)
-			
-			Render:DrawLine(bone_pos, self.hit or ray.position, Color(r, g, b, 192))
 
 			if not self.hit then
+			
+				local ray = Physics:Raycast(bone_pos, direction, 0, distance)
+				
+				Render:DrawLine(bone_pos, ray.position, Color(r, g, b, 192))
 
 				if ray.distance < 0.9 * distance and ray.position.y > 200 then
 					self.hit = ray.position
@@ -312,6 +314,8 @@ function Wingsuit:Input(args)
 				if dt > 500 then self:EndGrapple() end
 
 			else
+			 
+				Render:DrawLine(bone_pos, self.hit, Color(r, g, b, 192))
 			 
 				local yaw1 = math.atan2(bone_pos.x - self.hit.x, bone_pos.z - self.hit.z)
 				local yaw2 = LocalPlayer:GetAngle().yaw
@@ -348,7 +352,7 @@ end
 function Wingsuit:Abort()
 
 	for k,v in pairs(self.subs) do
-		if k ~= "camera" then
+		if k ~= "camera" and k~= "grapple" then
 			Events:Unsubscribe(v)
 			self.subs[k] = nil
 		end
