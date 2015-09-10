@@ -34,6 +34,13 @@ function Wingsuit:__init()
 		}
 	}
 	
+	self.whitelist = { -- Allow instant activation during these base states
+		animations = {
+			[AnimationState.SSkydive] = true,
+			[AnimationState.SParachute] = true
+		}
+	}
+	
 	self.timers = {
 		grapple = Timer()
 	}
@@ -60,7 +67,7 @@ function Wingsuit:Activate(args)
 
 			self.timers.activate = nil
 			
-			if (self.superman and (bs == AnimationState.SSkydive or bs == AnimationState.SParachute)) or (not self.superman and bs == AnimationState.SSkydive) then
+			if self.whitelist.animations[bs] then
 				
 				self.timers.camera_start = Timer()
 				self.speed = self.default_speed
