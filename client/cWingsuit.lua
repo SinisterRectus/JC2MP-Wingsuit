@@ -4,7 +4,7 @@ function Wingsuit:__init()
 
 	self.superman = false -- Enables superman physics (disables custom grapple)
 	self.grapple = true -- Enables custom grapple while gliding
-	self.barrel = true -- Enables barrel rolls
+	self.rolls = true -- Enables barrel rolls
 	
 	self.default_speed = 51 -- 51 m/s default
 	self.default_vertical_speed = -7 -- -7 ms default
@@ -186,9 +186,9 @@ function Wingsuit:SetVelocity()
 	Render:DrawText(screen_pos + Vector2(1,1), hud_str, Color.Black, TextSize.Large)
 	Render:DrawText(screen_pos, hud_str, Color.White, TextSize.Large)
 	
-	if not self.barrel then return end
+	if not self.rolls or self.subs.grapple then return end
 	
-	if Input:GetValue(Action.MoveLeft) > 0 and not self.subs.grapple then
+	if Input:GetValue(Action.MoveLeft) > 0 then
 		if not self.roll_left then
 			self.roll_left = true
 			if not self.timers.roll_left then
@@ -214,7 +214,7 @@ function Wingsuit:SetVelocity()
 		self.roll_left = nil
 	end
 	
-	if Input:GetValue(Action.MoveRight) > 0 and not self.subs.grapple then
+	if Input:GetValue(Action.MoveRight) > 0 then
 		if not self.roll_right then
 			self.roll_right = true
 			if not self.timers.roll_right then
