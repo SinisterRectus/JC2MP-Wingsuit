@@ -417,15 +417,19 @@ function Wingsuit:AddHelp()
 		if self.grapple then
 			text = 
 				"The wingsuit allows you to glide gently from the sky." .. 
-				"\n\nTo activate, double-tap Shift while sky-diving." ..
+				"\n\nTo activate, double-tap Shift while sky-diving or parachuting." ..
 				"\nTo de-activate, double-tap Ctrl." ..
 				"\nUse your grapple to propel yourself across land."	
 		else
 			text = 
 				"The wingsuit allows you to fly around Panau unencumbered." .. 
-				"\n\nTo activate, double-tap Shift while sky-diving." ..
+				"\n\nTo activate, double-tap Shift while sky-diving or parachuting." ..
 				"\nTo de-activate, double-tap Ctrl."
 		end			
+	end
+	
+	if self.rolls then
+		text = text .."\nDouble-tap left or right to roll."
 	end
 
 	Events:Fire("HelpAddItem", {
