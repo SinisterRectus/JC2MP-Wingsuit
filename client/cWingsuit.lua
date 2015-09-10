@@ -9,8 +9,11 @@ function Wingsuit:__init()
 	self.default_speed = 51 -- 51 m/s default
 	self.default_vertical_speed = -7 -- -7 ms default
 	
-	self.max_speed = 300 -- 300 m/s default, for superman mode
-	self.min_speed = 1 -- 1 m/s default, for superman mode
+	self.max_superman_speed = 300 -- 300 m/s default, for superman mode
+	self.min_superman_speed = 1 -- 1 m/s default, for superman mode
+	
+	self.max_normal_speed = 55 -- 55 m/s default, for non-superman mode
+	self.min_normal_speed = 35 -- 30 m/s default, for non-superman mode
 	
 	self.tether_length = 150 -- meters
 	self.yaw_gain = 1.5
@@ -171,9 +174,9 @@ function Wingsuit:SetVelocity()
 	
 	if self.superman then
 	
-		if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_speed then
+		if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_superman_speed then
 			self.speed = self.speed + 1
-		elseif Key:IsDown(VirtualKey.Control) and self.speed > self.min_speed then
+		elseif Key:IsDown(VirtualKey.Control) and self.speed > self.min_superman_speed then
 			self.speed = self.speed - 1
 		end
 			
@@ -181,6 +184,12 @@ function Wingsuit:SetVelocity()
 		LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed))
 		
 	else
+	
+		if Key:IsDown(VirtualKey.Shift) and self.speed < self.max_normal_speed then
+			self.speed = self.speed + 1
+		elseif Key:IsDown(VirtualKey.Control) and self.speed > self.min_normal_speed then
+			self.speed = self.speed - 1
+		end	
 	
 		local speed = self.speed - math.sin(LocalPlayer:GetAngle().pitch) * 20
 		LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 0, -speed) 
