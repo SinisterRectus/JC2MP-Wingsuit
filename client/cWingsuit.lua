@@ -7,7 +7,7 @@ function Wingsuit:__init()
 	self.rolls = true -- Enables barrel rolls
 	
 	self.default_speed = 51 -- 51 m/s default
-	self.default_vertical_speed = -5 -- -5 ms default
+	self.default_vertical_speed = -5 -- -5 m/s default
 	
 	self.max_speed = 300 -- 300 m/s default, for superman mode
 	self.min_speed = 1 -- 1 m/s default, for superman mode
@@ -366,16 +366,23 @@ end
 
 function Wingsuit:Abort()
 
-	if self.subs.wings then Events:Unsubscribe(self.subs.wings) end
-	if self.subs.velocity then Events:Unsubscribe(self.subs.velocity)end
-	if self.subs.glide then Events:Unsubscribe(self.subs.glide) end
-	if self.subs.input then Events:Unsubscribe(self.subs.input) end
-	
-	self.subs.wings = nil
-	self.subs.velocity = nil
-	self.subs.glide = nil
-	self.subs.input = nil
-	
+	if self.subs.wings then 
+		Events:Unsubscribe(self.subs.wings)
+		self.subs.wings = nil
+	end
+	if self.subs.velocity then 
+		Events:Unsubscribe(self.subs.velocity) 
+		self.subs.velocity = nil
+	end
+	if self.subs.glide then 
+		Events:Unsubscribe(self.subs.glide) 
+		self.subs.glide = nil
+	end
+	if self.subs.input then 
+		Events:Unsubscribe(self.subs.input)
+		self.subs.input = nil
+	end
+
 	self.timers.camera_stop = Timer()
 
 end
