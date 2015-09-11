@@ -7,7 +7,7 @@ function Wingsuit:__init()
 	self.rolls = true -- Enables barrel rolls
 	
 	self.default_speed = 51 -- 51 m/s default
-	self.default_vertical_speed = -7 -- -7 ms default
+	self.default_vertical_speed = -5 -- -5 ms default
 	
 	self.max_speed = 300 -- 300 m/s default, for superman mode
 	self.min_speed = 1 -- 1 m/s default, for superman mode
@@ -83,16 +83,17 @@ function Wingsuit:Activate(args)
 		
 				local timer = Timer()
 				self.timers.camera_start = Timer()
+				self.speed = self.default_speed
 				self.subs.camera = Events:Subscribe("CalcView", self, self.Camera)
 				self.subs.input = Events:Subscribe("LocalPlayerInput", self, self.Input)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
 				self.subs.delay = Events:Subscribe("PreTick", function()
-					LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * Vector3(0, 5, -5))
-					if timer:GetMilliseconds() > 1000 then
+					local dt = timer:GetMilliseconds()
+					LocalPlayer:SetBaseState(AnimationState.SSkydive)
+					LocalPlayer:SetLinearVelocity(LocalPlayer:GetAngle() * math.lerp(Vector3(0, self.speed, 0), Vector3(0, 0, -self.speed), dt / 1000))
+					if dt > 1000 then
 						Events:Unsubscribe(self.subs.delay)
 						self.subs.delay = nil
-						self.speed = self.default_speed
-						LocalPlayer:SetBaseState(AnimationState.SSkydive)
 						self.subs.velocity = Events:Subscribe("Render", self, self.SetVelocity)
 					end
 				end)
@@ -265,7 +266,7 @@ function Wingsuit:Glide()
 	
 	else
 	
-		Input:SetValue(Action.MoveBackward, 1)
+		Input:SetValue(Action.MoveBackward, 0.9)
 		
 		if self.yaw < 0 then
 			Input:SetValue(Action.MoveLeft, -self.yaw_gain * self.yaw)
@@ -317,8 +318,9 @@ function Wingsuit:Input(args)
 				
 				Render:DrawLine(bone_pos, ray.position, Color(r, g, b, 192))
 
-				if ray.distance < distance - 1 and ray.position.y > 200 then
+				if ray.distance < distance - 0.1 and ray.position.y > 199  then
 					self.hit = ray.position
+					self.speed = self.speed + 4
 					self.vertical_speed = -self.vertical_speed
 				end
 
@@ -358,6 +360,7 @@ function Wingsuit:EndGrapple()
 	self.hit = nil
 	self.yaw = 0
 	self.vertical_speed = self.default_vertical_speed
+	self.speed = self.default_speed
 
 end
 
