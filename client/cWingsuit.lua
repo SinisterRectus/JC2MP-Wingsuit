@@ -9,7 +9,7 @@ function Wingsuit:__init()
 	self.default_speed = 51 -- 51 m/s default
 	self.default_vertical_speed = -5 -- -5 m/s default
 	
-	self.max_speed = 300 -- 300 m/s default, for superman mode
+	self.max_speed = 350 -- 350 m/s default, for superman mode
 	self.min_speed = 1 -- 1 m/s default, for superman mode
 	
 	self.tether_length = 150 -- meters
@@ -421,8 +421,10 @@ function Wingsuit:Camera()
 	
 		local dt = self.timers.camera_start:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(Camera:GetPosition(), player_pos + player_angle * vector, dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 * dt / 1000))
+		if self.camera < 5 then
+			Camera:SetPosition(math.lerp(Camera:GetPosition(), player_pos + player_angle * vector, dt / 1000))
+			Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 * dt / 1000))
+		end
 
 		if dt >= 1000 then 
 			self.timers.camera_start = nil 
@@ -432,8 +434,10 @@ function Wingsuit:Camera()
 	
 		local dt = self.timers.camera_stop:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(player_pos + player_angle * vector, Camera:GetPosition(), dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 - 0.9 * dt / 1000))
+		if self.camera < 5 then
+			Camera:SetPosition(math.lerp(player_pos + player_angle * vector, Camera:GetPosition(), dt / 1000))
+			Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 - 0.9 * dt / 1000))
+		end
 
 		if dt >= 1000 then 
 			self.timers.camera_stop = nil
