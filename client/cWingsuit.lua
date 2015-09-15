@@ -16,6 +16,8 @@ function Wingsuit:__init()
 	self.yaw_gain = 1.5
 	self.yaw = 0
 	
+	self.camera = 1 -- Starting camera mode
+	
 	self.speed = self.default_speed
 	self.vertical_speed = self.default_vertical_speed
 	
@@ -72,7 +74,7 @@ function Wingsuit:Activate(args)
 				
 				self.timers.camera_start = Timer()
 				self.speed = self.default_speed
-				self.fp = false
+				-- self.camera = 1
 				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
 				self.subs.velocity = Events:Subscribe("Render", self, self.SetVelocity)
@@ -85,7 +87,7 @@ function Wingsuit:Activate(args)
 				local timer = Timer()
 				self.timers.camera_start = Timer()
 				self.speed = self.default_speed
-				self.fp = false
+				-- self.camera = 1
 				self.subs.camera = Events:Subscribe("CalcView", self, self.Camera)
 				self.subs.input = Events:Subscribe("LocalPlayerInput", self, self.Input)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
@@ -115,12 +117,16 @@ function Wingsuit:Activate(args)
 			else
 				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 			end
-			self:Abort()
+			self.timers.camera_stop = Timer()
 		end
 
-	elseif args.key == string.byte("Q") and self.subs.camera then
+	elseif args.key == string.byte("C") and self.subs.camera then
 	
-		self.fp = not self.fp
+		if self.camera < 5 then
+			self.camera = self.camera + 1
+		else
+			self.camera = 1
+		end
 		
 	end
 
@@ -388,22 +394,35 @@ function Wingsuit:Abort()
 		Events:Unsubscribe(self.subs.input)
 		self.subs.input = nil
 	end
-
-	self.timers.camera_stop = Timer()
+	if self.subs.camera then
+		Events:Unsubscribe(self.subs.camera)
+		self.subs.camera = nil
+	end
 
 end
 
 function Wingsuit:Camera()
 
-	local position = LocalPlayer:GetPosition()
-	local angle = LocalPlayer:GetAngle()
+	local player_pos = LocalPlayer:GetPosition()
+	local player_angle = LocalPlayer:GetAngle()
+	local vector
+	
+	if self.camera == 1 then
+		vector = Vector3(0, 2, 7)
+	elseif self.camera == 2 then
+		vector = Vector3(0, 1, 1)
+	elseif self.camera == 3 then
+		vector = Vector3(0, 0.5, -1)
+	elseif self.camera == 4 then
+		vector = Vector3(0, 1, 10)
+	end
 
 	if self.timers.camera_start then
 	
 		local dt = self.timers.camera_start:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(Camera:GetPosition(), position + angle * Vector3(0, 2, 7), dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9 * dt / 1000))
+		Camera:SetPosition(math.lerp(Camera:GetPosition(), player_pos + player_angle * vector, dt / 1000))
+		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 * dt / 1000))
 
 		if dt >= 1000 then 
 			self.timers.camera_start = nil 
@@ -413,23 +432,19 @@ function Wingsuit:Camera()
 	
 		local dt = self.timers.camera_stop:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(position + angle * Vector3(0, 2, 7), Camera:GetPosition(), dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9 - 0.9 * dt / 1000))
+		Camera:SetPosition(math.lerp(player_pos + player_angle * vector, Camera:GetPosition(), dt / 1000))
+		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9 - 0.9 * dt / 1000))
 
 		if dt >= 1000 then 
 			self.timers.camera_stop = nil
-			Events:Unsubscribe(self.subs.camera)
-			self.subs.camera = nil
+			self:Abort()
 		end	
 		
 	else
-
-		if self.fp then
-			Camera:SetPosition(position + angle * Vector3(0, 0.5, -1))
-			Camera:SetAngle(angle)
-		else
-			Camera:SetPosition(position + angle * Vector3(0, 2, 7))
-			Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9))
+		
+		if self.camera < 5 then
+			Camera:SetPosition(player_pos + player_angle * vector)
+			Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), player_angle, 0.9))
 		end
 		
 	end
@@ -463,6 +478,8 @@ function Wingsuit:AddHelp()
 	if self.rolls then
 		text = text .. "\nDouble-tap left or right to roll."
 	end
+	
+	text = text .. "\nPress C to change camera modes."
 
 	Events:Fire("HelpAddItem", {
 		name = "Wingsuit",
