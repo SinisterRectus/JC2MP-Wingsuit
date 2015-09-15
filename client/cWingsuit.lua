@@ -72,6 +72,7 @@ function Wingsuit:Activate(args)
 				
 				self.timers.camera_start = Timer()
 				self.speed = self.default_speed
+				self.fp = false
 				LocalPlayer:SetBaseState(AnimationState.SSkydive)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
 				self.subs.velocity = Events:Subscribe("Render", self, self.SetVelocity)
@@ -84,6 +85,7 @@ function Wingsuit:Activate(args)
 				local timer = Timer()
 				self.timers.camera_start = Timer()
 				self.speed = self.default_speed
+				self.fp = false
 				self.subs.camera = Events:Subscribe("CalcView", self, self.Camera)
 				self.subs.input = Events:Subscribe("LocalPlayerInput", self, self.Input)
 				self.subs.wings = Events:Subscribe("GameRender", self, self.DrawWings)
@@ -116,6 +118,10 @@ function Wingsuit:Activate(args)
 			self:Abort()
 		end
 
+	elseif args.key == string.byte("Q") and self.subs.camera then
+	
+		self.fp = not self.fp
+		
 	end
 
 end
@@ -345,7 +351,7 @@ function Wingsuit:Input(args)
 		return false
 	
 	end
-		
+	
 	if self.blacklist.actions[args.input] then return false end
 
 end
@@ -389,12 +395,15 @@ end
 
 function Wingsuit:Camera()
 
+	local position = LocalPlayer:GetPosition()
+	local angle = LocalPlayer:GetAngle()
+
 	if self.timers.camera_start then
 	
 		local dt = self.timers.camera_start:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(Camera:GetPosition(), LocalPlayer:GetPosition() + LocalPlayer:GetAngle() * Vector3(0, 2, 7), dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), LocalPlayer:GetAngle(), 0.9 * dt / 1000))
+		Camera:SetPosition(math.lerp(Camera:GetPosition(), position + angle * Vector3(0, 2, 7), dt / 1000))
+		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9 * dt / 1000))
 
 		if dt >= 1000 then 
 			self.timers.camera_start = nil 
@@ -404,8 +413,8 @@ function Wingsuit:Camera()
 	
 		local dt = self.timers.camera_stop:GetMilliseconds()
 
-		Camera:SetPosition(math.lerp(LocalPlayer:GetPosition() + LocalPlayer:GetAngle() * Vector3(0, 2, 7), Camera:GetPosition(), dt / 1000))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), LocalPlayer:GetAngle(), 0.9 - 0.9 * dt / 1000))
+		Camera:SetPosition(math.lerp(position + angle * Vector3(0, 2, 7), Camera:GetPosition(), dt / 1000))
+		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9 - 0.9 * dt / 1000))
 
 		if dt >= 1000 then 
 			self.timers.camera_stop = nil
@@ -414,9 +423,14 @@ function Wingsuit:Camera()
 		end	
 		
 	else
-	
-		Camera:SetPosition(LocalPlayer:GetPosition() + LocalPlayer:GetAngle() * Vector3(0, 2, 7))
-		Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), LocalPlayer:GetAngle(), 0.9))
+
+		if self.fp then
+			Camera:SetPosition(position + angle * Vector3(0, 0.5, -1))
+			Camera:SetAngle(angle)
+		else
+			Camera:SetPosition(position + angle * Vector3(0, 2, 7))
+			Camera:SetAngle(Angle.Slerp(Camera:GetAngle(), angle, 0.9))
+		end
 		
 	end
 
