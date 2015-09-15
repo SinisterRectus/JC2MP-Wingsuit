@@ -104,7 +104,7 @@ function Wingsuit:Activate(args)
 			
 		end
 
-	elseif args.key == VirtualKey.Control and self.subs.camera then
+	elseif args.key == VirtualKey.Control and self.subs.camera and not self.timers.camera_start and not self.timers.camera_stop then
 	
 		if not self.timers.activate or self.timers.activate:GetMilliseconds() > 500 then
 			self.timers.activate = Timer()
